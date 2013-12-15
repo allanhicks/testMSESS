@@ -1,0 +1,8 @@
+plotOrder,plotColor,operatingModelName,scenarioName,numSims,seed,minSimNum,maxSimNum,firstAssessYear,lastAssessYear,firstTSYear,perfectInfoCase,runAssessments,useAgeingErrorMatrix,minA,maxA,plusA, zeroCatch,initialCatch,survFreq,survSELog,survSETot,survNAge,survNAgeAdj,commNAge,commNAgeAdj,timeVarySelexOM,timeVarySelexAssess
+1,1,2013hake,test,2,531,2,3000,2013,2015,1966,F,T,F,2,20,15,F,365112,1,0.0001,0.01,10000,1,800,0.12,F,F
+1,1,2013hake,annual,1000,531,2,3000,2013,2052,1966,F,T,T,2,20,15,F,365112,1,0.085,0.42,65,1,800,0.12,F,F
+2,2,2013hake_randDevs.20,annualTVom,1000,531,2,3000,2013,2052,1966,F,T,T,2,20,15,F,365112,1,0.085,0.42,65,1,800,0.12,T,F
+3,3,2013hake_randDevs.20,annualTVboth,1000,531,2,3000,2013,2052,1966,F,T,T,2,20,15,F,365112,1,0.085,0.42,65,1,800,0.12,T,T
+4,4,2013hake,biennial,1000,531,2,3000,2013,2052,1966,F,T,T,2,20,15,F,365112,2,0.085,0.42,65,1,800,0.12,F,F
+5,5,2013hake_randDevs.20,biennialTVom,1000,531,2,3000,2013,2052,1966,F,T,T,2,20,15,F,365112,2,0.085,0.42,65,1,800,0.12,T,F
+6,6,2013hake_randDevs.20,biennialTVboth,1000,531,2,3000,2013,2052,1966,F,T,T,2,20,15,F,365112,2,0.085,0.42,65,1,800,0.12,T,T

@@ -1,0 +1,140 @@
+1) Sometimes it is nice to have input files and report.sso for each assessment in case we didn't save some info we needed.  
+I added code to readLines the SS input files and Report file and save as a separate R object called ssFiles???.Rdat object.
+
+CG: Sounds like a good idea, I may set this up so that they are part of the overall list structure.
+AH: It may be good to keep them separate. We could put in an option to not create them if someone really wanted to save space. 
+    However, we could just not include them in the single list, also.
+
+2) It would be nice to get rid of error opening ss3.dat. This only shows up in the command window (because cerr is used)
+--can do this by either call ss3 -ind THEDATAFILENAME or place an empty ss3.dat file in the directory
+--I added code to create an empty ss3.dat file, which is deleted later
+
+CG: I didn't know this would get rid of the error.  If this works, then problem solved.
+AH: It took me a while to figure that out.
+
+3) I added an argument for printstats, which eliminates a lot of r4ss output from SS_output when printstats=F
+
+CG: I wanted to do that from the beginning but it seemed some functions had the option and some didn't.  Anyway if this works, great.
+
+4) The object convCheck wasn't numeric in the while statement (~line 757), thus the statement always evaluated to TRUE
+   until MAX.ITERATIONS was exceeded --added as.numeric(convCheck[3])
+
+CG: This is something I probably didn't test enough, Thanks for catching it!
+
+5) It is important to have the correct version of r4ss. When I updated to the 2013 model, I was getting NA's. Updating r4ss fixed it.
+   So, I put in an argument called r4ssDir. If NULL (default) it runs update_r4ss_files() to get most recent version.
+   If you supply a directory path, it sources from that path (faster than updating from web, and you can use a specific version).
+   If you put in NA, it doesn't do the updating at all. Just loads the package.
+
+CG: I assumed it would work since my version did, thanks for the reminder about this.
+
+6) I start with both the assessment_control.ss and forecastAssessment.ss files in the scenario directory. It doesn't matter where there
+   are at the start since everything from the operating model is copied over.  However, I do not delete it at the end of the run.
+
+CG: See below about the unique scenario assessment_control.ss - it is renamed to control.ss!
+AH: Yep, that is true. However, I was thinking more about the forecast file. This way, it is clear that it is associated with the scenario
+     and the assessment, not the simulation. But, it doesn't matter where it is, as long as it is somewhere (but probably not both places).
+
+Rterm.exe is not found on my path by default
+
+CG: That's easy to fix! I will make a note on the readme that it must.  Did you get this working on your machine Allan?
+
+Readme needs to include setting up of Scenarios folder. Why not have it create the folder if the directory name is missing?
+
+CG: If the directory name is missing then the scenario has not been set up. Each scenrio must have a file called assessment_control.ss
+    which is changed to control.ss by the software. So what would we do if that file does not exist? I just left it to copying a folder over by hand
+    and then changing the assessment_control.ss file specifically for the scenario.
+
+Example process scripts do not line up with commented line in scenarios. Why is scen=1 when scenario 1 is commented out.
+I guess that it is the number of the row. It would be nice to have a scen column and then you don't have to comment out any lines.
+You can simply have a scenario column and call that scenario number in the function call.  Also, the checking of directories is cumbersome
+due to failures. Maybe having it create hte directory if the name does not exist.
+
+CG: As it stands scen is allocated incrementally to every uncommented row. This allows you to comment out what you don't want to run
+    and not have to change the process.cmd files at all. So you can just put a '#' in front on one you don't want to run and then add
+    a new scenario and not have to change the process.cmd files at all.
+
+why is readme a .md file?
+
+CG: This is the standard for github and now ADMB project uses it. It's called markdown and it's like 'markup' but easier to read and edit in text.
+    If you use Firefox go to addons and search for "Markdown viewer 1.3" and then make your MD files open with firefox.  Or take a look at a
+    github site, for example https://github.com/cgrandin/ss-elite and the readme appears in the nice markdown format.
+
+Instructions for running merge() function are vague. I imagine you have to set the working directory.
+
+CG: To run merge you just stay in the rscripts directory just like the rest of the project and run it.  It uses the values
+    assigned in the mseSSGlobals.r file to get the full directory names.  Everything in the project assumes R is run with a working directory = the rscripts directory.
+    I will add this to the readme so it is more clear.
+
+The modification of the control and par files are very specific to hake and may have to be recoded for every assessment, 
+and possibly each year of hake.  They are fine for updating to the 2013 model since there were minimal changes.
+
+CG: Yes, this is always the issue with MSEs, I've thought about generalizing these things but it's more work. I could modify this framework to this end if we feel
+    this is software worth continuing development on.
+
+When running in R, it pauses just before doing an assessment. (says Browse[1]>). This is the broswer() command in runSingleAssessment.
+
+CG: My bad! Looks like you got rid of the browser() call already.
+
+It may be useful to have ability for non-annual assessments.
+
+CG: Ok, this would be a simple step size command in a for loop, again if we want to pursue this as a more generalized framework I would be all for it.
+    If we want to do this for Hake this year let me know and I will get on it.
+
+should put assessment_control in OperatingModels, as with forecastassessment.sso, or vice versa
+
+CG: assessment_control is in each scenario folder because then they can be different for each. Nathan asked for this, and I think it's good because
+    you can change the way assessments behave as weel as the operating models. 
+AH:  I agree. I wrote this before I thought about where they should go. I now feel the forecastassessment.so file should be in scenarios.
+
+Should have update_r4ss, or call a specific version. It changes, and some differences may occur
+
+CG: Yes! agreed.
+
+posterior_mse and posterior_selex are the same file. I had renamed them in previous versions of MSE code.  
+I changed .MSE_POST_FILE and .SELEX_POST_FILE to reference the same files.
+
+CG: Thanks, this caused me alot of distress at the time!
+
+Is it doing mceval between each scenario? Does it need to? It is time consuming.
+
+CG: Yes, I can remove this call or make it an option, although I suspect it will never be wanted.
+
+
+
+MODIFICATIONS TO SS3.24S
+--added in test for existence of mcmc .sso files so that error is not present when they do not exist (lines 14230-14240)
+
+--added in output in files called posterior_natage.sso and posterior_selex.sso
+---multiple locations
+---file creation, headers, and output
+
+--output an additional column in posteriors.sso for Q (lines 14268 and 14419)
+----this is specific to using an analytical q, and I'm not sure how it will respond when not.
+
+--when running mcmc, does "First forecast loop with stochastic recruitment" have to be 1?  NO
+
+
+
+PROCESS OF SETTING UP A SIMULATION
+-- run mcmc on model with forecast years set to number of years into the future that you want stochastic recruitment
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+If I change the operating model, it is missing ss3.par in an assessment run. What am I missing?  You may have to run at least 1000 iterations of the mcmc. i was doing testing with smaller runs to reduce time. This is an ADMB thing to write out posterior stuff, it has to go beyond the iterations where it is scaling.

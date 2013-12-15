@@ -344,6 +344,9 @@ runSimulations <- function(scenarioDat,
         simulations[[sim]]$catch                <- createAssessVector(length(scenarioDat$assessYears)+1)
         simulations[[sim]]$assessYears          <- scenarioDat$firstAssessYear:scenarioDat$lastAssessYear
         simulations[[sim]]$catchYears           <- scenarioDat$firstAssessYear:(scenarioDat$lastAssessYear+1)
+        # Pass the timeVarying flag along to single assessment runs
+        simulations[[sim]]$timeVarySelexAssess <- scenarioDat$timeVarySelexAssess
+        simulations[[sim]]$timeVarySelexOM     <- scenarioDat$timeVarySelexOM
 
         # setup initial catch for assessment scenarios
         if(!scenarioDat$zeroCatch){
@@ -382,16 +385,27 @@ runSimulations <- function(scenarioDat,
 
         setupForecastFile(dir = simulations[[sim]]$fullPath)
 
-        # Run the simulation (Operating Model) for this sim (mceval only)
+        # Run the simulation (Operating Model) for this sim (mceval only) to reduce to one line based on newPSV
         runMCEval(dir=simulations[[sim]]$fullPath)
         
         #update the ss3.par file with the current MCMC parameters for future additions
-        updateParFile(dir=simulations[[sim]]$fullPath)
+        if(simulations[[sim]]$timeVarySelexOM) {
+            postsParNames <- .POSTS_PAR_NAMES_TV
+            parFileNames <- .PAR_FILE_NAMES_TV
+        } else {
+            postsParNames <- .POSTS_PAR_NAMES
+            parFileNames <- .PAR_FILE_NAMES
+        }
+        updateParFile(simulations[[sim]]$fullPath,iter=simulations[[sim]]$simNum,postsParNames=postsParNames,parFileNames=parFileNames)
+        runSSfromPar(simulations[[sim]]$fullPath,useSystem=useSystem,verbose=verbose)
 
         # Store variables for this particular MCMC sample
-        simulations[[sim]]$M            <- getM(scenarioDat,scenarioDat$sims[sim])
-        simulations[[sim]]$qSurv        <- getQ(scenarioDat,scenarioDat$sims[sim])
-        selex                           <- getSelexByFleet(scenarioDat,scenarioDat$sims[sim])
+        # because we just updated par and ran ss3 with no estimation, all the values are in the report files
+        output <- SS_output(dir=simulations[[sim]]$fullPath,covar=F,verbose=verbose,printstats=printstats)
+
+        simulations[[sim]]$M            <- getM(output)
+        simulations[[sim]]$qSurv        <- getQ(output)
+        selex                           <- getSelexByFleet(output)
         simulations[[sim]]$selexFishery <- selex[[1]]
         simulations[[sim]]$selexSurvey  <- selex[[2]]
 
@@ -405,9 +419,6 @@ runSimulations <- function(scenarioDat,
         simulations[[sim]]$assessNatage   <- NULL
         simulations[[sim]]$assessWtatage  <- NULL
         simulations[[sim]]$assessBatage   <- NULL
-        # Pass the timeVarying flag along to single assessment runs
-        simulations[[sim]]$timeVarySelexAssess <- scenarioDat$timeVarySelexAssess
-        simulations[[sim]]$timeVarySelexOM     <- scenarioDat$timeVarySelexOM
 
         simulations[[sim]]$assessRecr     <- matrix(ncol=length(simulations[[sim]]$assessTSYears),
                                                     nrow=length(simulations[[sim]]$assessYears))
@@ -1196,7 +1207,7 @@ updateParFile <- function(dir,iter,postsParNames,parFileNames,parIn="ss3.par",pa
     #first read in parameters from posteriors.sso file in current directory
     posts <- read.table(postsF,header=T)
     posts <- posts[posts$Iter==iter,]
-    pars  <- par2Rlist(parF)
+    pars  <- par2Rlist(parIn)
 
     #grep interprets a "[" as a special character, which occurs in par names, therefore use fixed=T
 
@@ -1228,8 +1239,6 @@ updateParFile <- function(dir,iter,postsParNames,parFileNames,parIn="ss3.par",pa
         }
     }
 
-print("writing ss3.par")
-print(parOut)
     #write out new par file
     cat(names(pars)[1],"\n",file=parOut,append=F)
     cat(pars[[1]],"\n",file=parOut,append=T)
@@ -1282,20 +1291,65 @@ modifyBiasCorr <- function(fullPathSim,ctlFile) {
   writeLines(ctl,fullPathControl)
 }
 
-postsParNames <- c("NatM_p_1_Fem_GP_1","SR_LN.R0.","SR_BH_steep","Early_",      "Main_",  "ForeRecr",          "Q_extraSD_2_Acoustic_Survey","AgeSel_1P_","AgeSel_2P_","_Fishery_DEVadd_")
-parFileNames <- c("MGparm[1]",         "SR_parm[1]","SR_parm[2]","recdev_early","recdev1","Fcast_recruitments","Q_parm[1]",                  "selparm[3]","selparm[25]","selparm_dev")
-setwd("C:\\NOAA2014\\Hake\\MSE\\testMSESS\\OperatingModels\\test\\mcmcDev2")
-updateParFile(getwd(),iter=4,postsParNames=postsParNames,parFileNames=parFileNames)
-#change starter to read from par and last phase = 0
-starter <- SS_readstarter("starter.ss")
-starter$init_values_src <- 1         #read from par
-starter$last_estimation_phase <- 0   #no estimation
-SS_writestarter(starter,dir=getwd(),file="starter.ss",overwrite=T)
-#Change control file to have bias correction at 1 for all years
-modifyBiasCorr(getwd(),"simulation_control.ss")
-#There is a bug in SS where it appends a couple of lines to posteriors files (posteriors.sso, derived_posteriors.sso, and maybe more)
-#  either copy and replace psoteriors, or run ss3 from par in a separate directory. UpdateParFile won't work with the appended lines.
-system("ss3.exe -nohess")
+#postsParNames <- c("NatM_p_1_Fem_GP_1","SR_LN.R0.","SR_BH_steep","Early_",      "Main_",  "ForeRecr",          "Q_extraSD_2_Acoustic_Survey","AgeSel_1P_","AgeSel_2P_","_Fishery_DEVadd_")
+#parFileNames <- c("MGparm[1]",         "SR_parm[1]","SR_parm[2]","recdev_early","recdev1","Fcast_recruitments","Q_parm[1]",                  "selparm[3]","selparm[25]","selparm_dev")
+#setwd("C:\\NOAA2014\\Hake\\MSE\\testMSESS\\OperatingModels\\test\\mcmcDev2")
+#updateParFile(getwd(),iter=4,postsParNames=postsParNames,parFileNames=parFileNames)
+##change starter to read from par and last phase = 0
+#starter <- SS_readstarter("starter.ss")
+#starter$init_values_src <- 1         #read from par
+#starter$last_estimation_phase <- 0   #no estimation
+#SS_writestarter(starter,dir=getwd(),file="starter.ss",overwrite=T)
+##Change control file to have bias correction at 1 for all years
+#modifyBiasCorr(getwd(),"simulation_control.ss")
+##There is a bug in SS where it appends a couple of lines to posteriors files (posteriors.sso, derived_posteriors.sso, and maybe more)
+##  either copy and replace psoteriors, or run ss3 from par in a separate directory. UpdateParFile won't work with the appended lines.
+#system("ss3.exe -nohess")
+
+runSSfromPar <- function(dir,cmd="ss3.exe -nohess",useSystem=T,verbose=T) {
+    #Sets up and runs SS from the current directory to get all output given the ss3.par file
+    #no estimation
+    
+    origWd <- getwd()
+    setwd(dir)
+    
+    #change starter to read from par and last phase = 0
+    starter <- SS_readstarter("starter.ss",verbose=verbose)
+    starter$init_values_src <- 1         #read from par
+    starter$last_estimation_phase <- 0   #no estimation
+    SS_writestarter(starter,dir=getwd(),file="starter.ss",overwrite=T,verbose=verbose,warn=F)
+    #Change control file to have bias correction at 1 for all years
+    modifyBiasCorr(getwd(),"simulation_control.ss")
+    
+    #There is a bug in SS where it appends a couple of lines to posteriors files (posteriors.sso, derived_posteriors.sso, and maybe more)
+    #  either copy and replace psoteriors, or run ss3 from par in a separate directory. UpdateParFile won't work with the appended lines.
+    #I backup posteriors.sso and derived_posteriors.sso restore after running ss
+    file.copy(.POST_FILE,"posteriorsCopy.sso",overwrite=T)
+    file.copy(.DER_POST_FILE,"derived_posteriorsCopy.sso",overwrite=T)
+    file.copy(.POST_NATAGE_FILE,"posterior_natageCopy.sso",overwrite=T)
+    file.copy(.SELEX_POST_FILE,"posterior_selexCopy.sso",overwrite=T)
+    file.copy(.VECT_POST_FILE,"posterior_vectorsCopy.sso",overwrite=T)
+
+    tryCatch({
+        if(useSystem){
+            cmdOut <- system(command=cmd,intern=T)
+        }else{
+            cmdOut <- shell(cmd=cmd,intern=T)
+        }
+    },error=function(err){
+        cat("runSSfromPar: Error running SS in ",getwd(),".\n",sep="")
+        setwd(origWd)
+        return(NULL)
+    })
+    file.copy("posteriorsCopy.sso",.POST_FILE,overwrite=T)
+    file.copy("derived_posteriorsCopy.sso",.DER_POST_FILE,overwrite=T)
+    file.copy("posterior_natageCopy.sso",.POST_NATAGE_FILE,overwrite=T)
+    file.copy("posterior_selexCopy.sso",.SELEX_POST_FILE,overwrite=T)
+    file.copy("posterior_vectorsCopy.sso",.VECT_POST_FILE,overwrite=T)
+
+    setwd(origWd)
+}
+    
 
 par2Rlist <- function(fn) {
     #reads in ss3.par and converts it to a list with names
@@ -1941,9 +1995,21 @@ getM <- function(scenarioDat,simNum){
   M <- scenarioDat$post$NatM_p_1_Fem_GP_1[scenarioDat$post$Iter==simNum]
   return(M)
 }
+getM <- function(out){
+  # Get M for this particular MCMC sample (simNum) but from output from Report
+  # assume that you have changed par file and ran from par to reproduce MCMC output
+  M <- out$parameters[out$parameters$Label=="NatM_p_1_Fem_GP_1","Value"]
+  return(M)
+}
 getQ <- function(scenarioDat,simNum){
   # Get survey Q for this particular MCMC sample (simNum)
   Q <- scenarioDat$post$Q_2[scenarioDat$post$Iter==simNum]
+  return(Q)
+}
+getQ <- function(out){
+  # Get analytical Q for this particular MCMC sample (simNum) but from output from Report
+  # assume that you have changed par file and ran from par to reproduce MCMC output
+  Q <- as.numeric(out$index_variance_tuning_check$Q)
   return(Q)
 }
 getSelexByFleet <- function(scenarioDat,simNum){
@@ -1953,6 +2019,21 @@ getSelexByFleet <- function(scenarioDat,simNum){
   selexFishery           <- scenarioDat$selex[[1]][scenarioDat$selex[[1]]$mceval==simNum,.SELEX_MIN_AGE_IND:.SELEX_MAX_AGE_IND]  #fishery selex
   selexSurvey            <- scenarioDat$selex[[2]][scenarioDat$selex[[2]]$mceval==simNum,.SELEX_MIN_AGE_IND:.SELEX_MAX_AGE_IND]  #survey selex
   ageLabels              <- paste(.AGE_ERROR_COL_PREFIX,0:scenarioDat$maxA,sep="")
+# TODO: fix row names of these to be sim number
+  colnames(selexFishery) <- ageLabels
+  colnames(selexSurvey)  <- ageLabels
+  return(list(selexFishery,selexSurvey))
+}
+getSelexByFleet <- function(output){
+
+  # Get selectivity for this particular MCMC sample (simNum) but from output from Report
+  # assume that you have changed par file and ran from par to reproduce MCMC output
+  # Returns a list of the fleet selexes.  Modify column names to be the same as the other
+  # age-based data
+  yr <- max(out$ageselex[,"year"])-1
+  selexFishery           <- out$ageselex[out$ageselex[,"year"]==yr & out$ageselex[,"fleet"]==1,-(1:7)]  #fishery selex
+  selexSurvey            <- out$ageselex[out$ageselex[,"year"]==yr & out$ageselex[,"fleet"]==2,-(1:7)]  #survey selex
+  ageLabels              <- paste(.AGE_ERROR_COL_PREFIX,colnames(selexFishery),sep="")
 # TODO: fix row names of these to be sim number
   colnames(selexFishery) <- ageLabels
   colnames(selexSurvey)  <- ageLabels
@@ -2075,6 +2156,8 @@ setupStarterFile <- function(dir,
   fullPathFile     <- file.path(dir,file)
   starter          <- SS_readstarter(file=fullPathFile, verbose=verbose)
   starter$ctlfile  <- ctlFile
+  starter$init_values_src <- 0  # Tells SS to not read in the par file
+  starter$last_estimation_phase <- 25   #full estimation
   #starter$MCMCthin <- simNum   # Create starter file with the thinning starting at the current sim (to save a little time)
   SS_writestarter(starter,dir=dir,file=file,overwrite=T,verbose=verbose,warn=F)
 }
@@ -2101,7 +2184,8 @@ copySSInputFiles <- function(srcFileList=c(.DATA_FILE,
                                            .SS_EXE_FILE,
                                            .SS_PSV_FILE,
                                            .POST_NATAGE_FILE,
-                                           .WT_AT_AGE_FILE),
+                                           .WT_AT_AGE_FILE,
+                                           .PAR_FILE),
                              desFileList=c(.DATA_FILE,
                                            .SIM_CONTROL_FILE,
                                            .ASSESS_CONTROL_FILE,
@@ -2111,7 +2195,8 @@ copySSInputFiles <- function(srcFileList=c(.DATA_FILE,
                                            .SS_EXE_FILE,
                                            .SS_PSV_FILE,
                                            .POST_NATAGE_FILE,
-                                           .WT_AT_AGE_FILE),
+                                           .WT_AT_AGE_FILE,
+                                           .PAR_FILE),
                              sourceDir,
                              destDir,
                              all = F,

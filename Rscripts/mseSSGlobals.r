@@ -172,6 +172,12 @@ options(stringsAsFactors=FALSE)
 .NEW_PSV_EXE               <- "newPsv.exe"
 .ADD_PSV_EXE               <- "addYrMCMC.exe"
 
+#Other
+.POSTS_PAR_NAMES <- c("NatM_p_1_Fem_GP_1","SR_LN.R0.","SR_BH_steep","Early_",      "Main_",  "ForeRecr",          "Q_extraSD_2_Acoustic_Survey","AgeSel_1P_","AgeSel_2P_")
+.PAR_FILE_NAMES <- c("MGparm[1]",         "SR_parm[1]","SR_parm[2]","recdev_early","recdev1","Fcast_recruitments","Q_parm[1]",                  "selparm[3]","selparm[25]")
+.POSTS_PAR_NAMES_TV <- c("NatM_p_1_Fem_GP_1","SR_LN.R0.","SR_BH_steep","Early_",      "Main_",  "ForeRecr",          "Q_extraSD_2_Acoustic_Survey","AgeSel_1P_","AgeSel_2P_","_Fishery_DEVadd_")
+.PAR_FILE_NAMES_TV <- c("MGparm[1]",         "SR_parm[1]","SR_parm[2]","recdev_early","recdev1","Fcast_recruitments","Q_parm[1]",                  "selparm[3]","selparm[25]","selparm_dev")
+
 
 ###################################################################
 ###################################################################

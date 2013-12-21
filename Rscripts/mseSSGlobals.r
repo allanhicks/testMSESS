@@ -109,7 +109,7 @@ options(stringsAsFactors=FALSE)
 .SEASON                <- 1     # Used in writing the catch data to the datafile for each assessment run
 .AGE_ERROR_COL_PREFIX  <- "a"   # Prefix for all age matrices' row or column names.
 .AGE_COMP_LABELS       <- c("assessYear","season","fleet","gender","part","ageError","lengthBinLo","lengthBinHi")
-.WT_AT_AGE             <- c(0.03,0.0885,0.2562,0.3799,0.4913,0.5434,0.5906,0.662,0.7215,0.791,0.8629,0.9315,0.9681,1.0751,1.0016,1.0202,1.0202,1.0202,1.0202,1.0202,1.0202)
+#.WT_AT_AGE             <- c(0.03,0.0885,0.2562,0.3799,0.4913,0.5434,0.5906,0.662,0.7215,0.791,0.8629,0.9315,0.9681,1.0751,1.0016,1.0202,1.0202,1.0202,1.0202,1.0202,1.0202)
 .BRATIO_REP            <- "Bratio"      # Found in the Report file and the derived_posteriors file
 .SSB_REP               <- "SPB"         # Found in the Report file and the derived_posteriors file
 .SSB_PREFIX            <- paste(.SSB_REP,"_",sep="")
@@ -143,9 +143,9 @@ options(stringsAsFactors=FALSE)
 # The following files will be found inside the individual scenario directories
 .DER_POST_FILE         <- "derived_posteriors.sso"
 .POST_FILE             <- "posteriors.sso"
-.POST_NATAGE_FILE      <- "posterior_natage.sso"
+#.POST_NATAGE_FILE      <- "posterior_natage.sso"
 #.MSE_POST_FILE         <- "posterior_mse.sso"
-.MSE_POST_FILE         <- "posterior_selex.sso"
+#.MSE_POST_FILE         <- "posterior_selex.sso"
 .SELEX_POST_FILE       <- "posterior_selex.sso"
 .VECT_POST_FILE        <- "posterior_vectors.sso"
 .AGE_ERROR_FILE        <- "AgeingError.csv"

@@ -173,7 +173,9 @@ makePrettyNames <- function(info, stringSep=" "){
 }
 
 createAssessVector <- function(vectorLength){
-  return(vector(mode="numeric",length=vectorLength))
+    #when creating empty vectors I prefer to use NA so that you can tell if the vector was filled in with a zero or not filled in due to a bug
+    return(rep(NA,vectorLength))
+    #return(vector(mode="numeric",length=vectorLength))
 }
 
 createSimAssessMatrix <- function(simulationNums,assessYears){

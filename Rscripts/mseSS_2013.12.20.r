@@ -411,14 +411,13 @@ runSimulations <- function(scenarioDat,
         # Update the catch data for the assessment model, and write the data file out
         dat$N_catch   <- dat$N_catch + 1
         catchThisYear <- scenarioDat$initialCatch
-
         dat$catch     <- rbind(dat$catch,c(catchThisYear,scenarioDat$firstAssessYear,.SEASON))
 
         SS_writedat(dat,outfile=file.path(simDir,.DATA_FILE),overwrite=T,verbose=verbose)
 
         # In simulation directory, add recruitment deviation year and bias corrections years to control files, and assessment time-varying selex if doing it
         modifyControlFile(simDir,ctlFile=.SIM_CONTROL_FILE,timeVarySelex=simulations[[sim]]$timeVarySelexOM) #OM will be updated every year
-
+        
         runSSfromPar(simulations[[sim]]$fullPath,useSystem=useSystem,verbose=verbose)
 
         # Store variables for this particular MCMC sample
@@ -721,7 +720,7 @@ runAssessments <- function(simDat,
 
     # Store variables for this particular MCMC sample
     # because we just updated par and ran ss3 with no estimation, all the values are in the report files
-    #output <- SS_output(dir=simDat$fullPath,covar=F,verbose=verbose,printstats=printstats)
+    #output <- SS_output(dir=simDat$fullPath,covar=F,verbose=verbose,printstats=printstats)    
 
     # Copy the current year's data and control files back again.
     #file.copy(desDataFile,srcDataFile,overwrite=T)
@@ -1096,11 +1095,8 @@ getSimResults <- function(simDat,
   rownames(selexFishery) <- as.character(tmp[tmp[,"fleet"]==1,"year"])
   rownames(selexSurvey) <- as.character(tmp[tmp[,"fleet"]==2,"year"])
 
-  # CG: Instead of changing the merging and plotting code everywhere I just changed these two lines.
-  #simDat$omSelexFishery <- selexFishery
-  #simDat$omSelexSurvey  <- selexSurvey
-  simDat$selexFishery <- selexFishery
-  simDat$selexSurvey  <- selexSurvey
+  simDat$omSelexFishery <- selexFishery
+  simDat$omSelexSurvey  <- selexSurvey
 
   return(simDat)
 }
@@ -1200,14 +1196,13 @@ getAssessmentResults <- function(simDat,
 
   #save the whole matrix of estimated selectivities from the assessment
   tmp          <- output$ageselex[output$ageselex[,"factor"]=="Asel",]
-  # CG: next line was to see what was in the ageselex matrix starting with Asel
-  #output$ageselex[grep("Asel",output$ageselex$factor),]
   selexFishery <- tmp[tmp[,"fleet"]==1,-(1:7)]  #fishery selex
   selexSurvey  <- tmp[tmp[,"fleet"]==2,-(1:7)]  #survey selex
   ageLabels    <- paste(.AGE_ERROR_COL_PREFIX,colnames(selexFishery),sep="")
   colnames(selexFishery) <- colnames(selexSurvey)  <- ageLabels
   rownames(selexFishery) <- as.character(tmp[tmp[,"fleet"]==1,"year"])
   rownames(selexSurvey)  <- as.character(tmp[tmp[,"fleet"]==2,"year"])
+
   simDat$assessSelexFishery[[as.character(assessYr)]] <- selexFishery
   simDat$assessSelexSurvey[[as.character(assessYr)]]  <- selexSurvey
 
@@ -2476,7 +2471,7 @@ if(exists("scen")) {  #do this only if sourcing the file from a cmd prompt with 
            scen=scen,
            emailAddress="yourname@gmail.com",
            emailPassword="",
-           updateR4ss = FALSE)
+           updateR4ss = TRUE)
     #mergeMSE()
 }
 
